@@ -1,0 +1,47 @@
+version: "3.7"
+
+networks:
+  vittel-network:
+
+services:
+  db:
+    image: mariadb:10
+    container_name: vittel
+    environment:
+      MYSQL_DATABASE: "${MYSQL_DATABASE}"
+      MYSQL_USER: "${MYSQL_USER}"
+      MYSQL_PASSWORD: "${MYSQL_PASSWORD}"
+      MYSQL_ROOT_PASSWORD: "${MYSQL_ROOT_PASSWORD}"
+    networks:
+      - vittel-network
+
+  wordpress-fpm:
+    image: wordpress:5-fpm-alpine
+    container_name: vittel-fpm
+    depends_on:
+      - db
+    volumes:
+      - wp_files:/var/www/html
+    environment:
+      WORDPRESS_DB_HOST: "db"
+      WORDPRESS_DB_NAME: "${WORDPRESS_DB_NAME}"
+      WORDPRESS_DB_USER: "${WORDPRESS_DB_USER}"
+      WORDPRESS_DB_PASSWORD: "${WORDPRESS_DB_PASSWORD}"
+    networks:
+      - vittel-network
+
+  nginx:
+    image: nginx:alpine
+    container_name: vittel-nginx
+    depends_on:
+      - wordpress-fpm
+    ports:
+      - "8085:80"
+    volumes:
+      - ./conf.d:/etc/nginx/conf.d
+      - wp_files:/var/www/html
+    networks:
+      - vittel-network
+
+volumes:
+  wp_files:
